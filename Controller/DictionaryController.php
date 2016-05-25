@@ -4,12 +4,13 @@ namespace Youshido\AdminBundle\Controller;
 
 use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\Tools\Pagination\Paginator;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeToStringTransformer;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\PropertyAccess\PropertyAccess;
 use Youshido\CMSBundle\Structure\Attribute\AttributedTrait;
 
 class DictionaryController extends BaseEntityController
@@ -54,28 +55,38 @@ class DictionaryController extends BaseEntityController
     {
         $this->get('adminContext')->setActiveModuleName($module);
         $moduleConfig = $this->get('adminContext')->getActiveModule();
+        $em = $this->getDoctrine()->getManager();
 
-        if (($object = $this->getDoctrine()->getRepository($moduleConfig['entity'])->find($id)) && ($path = $request->get('path'))) {
-            /**
-             * @var AttributedTrait $object
-             */
-            $path = $request->get('path');
+        $object = $this->getDoctrine()->getRepository($moduleConfig['entity'])->find($id);
+        $path = $request->get('path');
+
+        if ($object && $path) {
+            $propertyAccessor = PropertyAccess::createPropertyAccessor();
+            $objectMetadata = $em->getClassMetadata(get_class($object));
             $needRefresh = false;
-            foreach ($object->getAttributes() as $attr) {
-                if (strpos($path, $attr->getValue()) !== false) {
-                    // todo correct attribute remove
+
+            foreach ($objectMetadata->getFieldNames() as $fieldName) {
+                $fieldValue = $propertyAccessor->getValue($object, $fieldName);
+
+                if (!is_string($fieldValue)) {
+                    // File paths are always strings. So non string value can be skipped.
+                    continue;
+                }
+
+                // FIXME: `strcmp()` should be used. But there's a bug now that
+                //        $path contains one extra leading slash. Cannot say
+                //        how it got there so I'm keeping the condition now.
+                if (strpos($path, $fieldValue) !== false) {
                     $basePath = $this->get('kernel')->getRootDir() . '/../web';
                     if (is_file($basePath . $path)) {
                         unlink($basePath . $path);
                     }
-                    $attr->setValue(null);
+                    $propertyAccessor->setValue($object, $fieldName, null);
                     $needRefresh = true;
                 }
             }
+
             if ($needRefresh) {
-                $object->setAttributes($object->getAttributes());
-                $em = $this->getDoctrine()->getManager();
-                $em->persist($object);
                 $em->flush();
             }
         }
