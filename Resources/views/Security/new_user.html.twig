@@ -1,6 +1,6 @@
 {% extends '@YAdmin/_layout.html.twig' %}
 
-{% form_theme form _self %}
+{% form_theme form '@YAdmin/Security/new_user.html.twig' %}
 
 {%- block form_row -%}
     <div class="form-group">
@@ -15,7 +15,7 @@
 {%- block form_label -%}
     {% set label_attr = label_attr|merge({class : 'col-md-2 control-label'}) %}
 
-    {% if label is not sameas(false) -%}
+    {% if label is not same as(false) -%}
         {% if not compound -%}
             {% set label_attr = label_attr|merge({'for': id}) %}
         {%- endif %}
