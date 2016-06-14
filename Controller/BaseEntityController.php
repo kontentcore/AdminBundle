@@ -68,10 +68,16 @@ class BaseEntityController extends Controller
                     $field = $key;
                 }
 
-                $moduleConfig['filters'][$key]['exact']) {
-                $qb->andWhere(sprintf('%s.%s = :%s_query',
-                                      $alias, $field, $key));
-                $qb->setParameter("{$key}_query", $value);
+                if (!isset($moduleConfig['filters'][$key]['exact']) ||
+                    $moduleConfig['filters'][$key]['exact']) {
+                    $qb->andWhere(sprintf('%s.%s = :%s_query',
+                                          $alias, $field, $key));
+                    $qb->setParameter("{$key}_query", $value);
+                } else {
+                    $qb->andWhere(sprintf('%s.%s LIKE :%s_query',
+                                          $alias, $field, $key));
+                    $qb->setParameter("{$key}_query", "%{$value}%");
+                }
             }
         }
 
