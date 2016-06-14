@@ -43,10 +43,40 @@ class BaseEntityController extends Controller
         $qb->select('t')->from($moduleConfig['entity'], 't');
 
         if (!empty($filterData)) {
+            $joins = [];
             foreach ($filterData as $key => $value) {
-                if($value){
-                    $qb->andWhere(sprintf('t.%s = :%s_query', $key, $key));
-                    $qb->setParameter($key . '_query', $value);
+                if (!$value) continue;
+
+                if (isset($moduleConfig['filters'][$key]['join']) &&
+                    !in_array($moduleConfig['filters'][$key]['join']['ref'][1],
+                              $joins)) {
+                    $joins[] = $moduleConfig['filters'][$key]['join']['ref'][1];
+                    $qb->join(
+                        't.' . $moduleConfig['filters'][$key]['join']['ref'][0],
+                        $moduleConfig['filters'][$key]['join']['ref'][1]
+                    );
+                }
+
+                $alias = null;
+                $field = null;
+
+                if (isset($moduleConfig['filters'][$key]['join'])) {
+                    $alias = $moduleConfig['filters'][$key]['join']['ref'][1];
+                    $field = $moduleConfig['filters'][$key]['join']['field'];
+                } else {
+                    $alias = 't';
+                    $field = $key;
+                }
+
+                if (!isset($moduleConfig['filters'][$key]['exact']) ||
+                    $moduleConfig['filters'][$key]['exact']) {
+                    $qb->andWhere(sprintf('%s.%s = :%s_query',
+                                          $alias, $field, $key));
+                    $qb->setParameter("{$key}_query", $value);
+                } else {
+                    $qb->andWhere(sprintf('%s.%s LIKE :%s_query',
+                                          $alias, $field, $key));
+                    $qb->setParameter("{$key}_query", "%{$value}%");
                 }
             }
         }
