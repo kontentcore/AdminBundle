@@ -20,6 +20,7 @@ use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 use Symfony\Component\Yaml\Parser;
 use Symfony\Component\Yaml\Yaml;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 class AdminContext
 {
@@ -28,6 +29,7 @@ class AdminContext
     protected $_activeModuleName = 'dashboard';
     protected $_config;
     protected $_container;
+    protected $_language;
     protected $_guesser;
     protected $_isInitialized    = false;
 
@@ -46,14 +48,14 @@ class AdminContext
             $resources = [];
 
             $resources[] = new FileResource($configPath);
-            $config = Yaml::parse(file_get_contents($configPath));
+            $config = $this->parseConfig($configPath);
 
             if (!empty($config['imports'])) {
                 foreach ($config['imports'] as $info) {
                     $configPath    = $locator->locate($info['resource']);
                     $resources[] = new FileResource($configPath);
 
-                    $config = array_merge_recursive($config, Yaml::parse(file_get_contents($configPath)));
+                    $config = array_merge_recursive($config, $this->parseConfig($configPath));
                 }
                 unset($config['imports']);
             }
@@ -62,6 +64,49 @@ class AdminContext
         }
 
         $this->_config = require $cachePath;
+    }
+
+    private function parseConfig($path)
+    {
+        $data = Yaml::parse(file_get_contents($path));
+        foreach ($data['modules'] as $key => $info) {
+            if (isset($info['private']) &&
+                $this->evaluateExpression($info['private'])) {
+                $info['private'] = true;
+            } elseif (isset($info['private'])) {
+                unset($info['private']);
+            }
+        }
+
+        return $data;
+    }
+
+    private function initializeLanguage()
+    {
+        if (isset($this->_language)) return;
+
+        $this->_language = new ExpressionLanguage();
+        $this->_language->register('parameter', function ($str) {
+            return sprintf(
+                '(is_string(%1$s) ? ' .
+                    '$this->_container->getParameter(%1$s) : ' .
+                    '%1$s)',
+                $str
+            );
+        }, function ($arguments, $str) {
+            return is_string($str) ?
+                $arguments['container']->getParameter($str) :
+                $str;
+        });
+    }
+
+    private function evaluateExpression($expr)
+    {
+        $this->initializeLanguage();
+
+        return $this->_language->evaluate($expr, [
+            'container' => $this->_container
+        ]);
     }
 
     protected function initialize()
