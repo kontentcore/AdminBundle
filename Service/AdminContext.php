@@ -69,7 +69,7 @@ class AdminContext
     private function parseConfig($path)
     {
         $data = Yaml::parse(file_get_contents($path));
-        foreach ($data['modules'] as $key => $info) {
+        foreach ($data['modules'] as &$info) {
             if (isset($info['private']) &&
                 $this->evaluateExpression($info['private'])) {
                 $info['private'] = true;
