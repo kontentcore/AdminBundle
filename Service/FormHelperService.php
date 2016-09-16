@@ -200,13 +200,13 @@ class FormHelperService extends ContainerAware {
                 if(!isset($info['property']) || !$info['property']){
                     throw new \Exception('You must specify property for autocomplete type');
                 }
-                if(!isset($info['entity']) || !$info['entity']){
-                    throw new \Exception('You must specify property for autocomplete type');
-                }
 
-                $accessor =  PropertyAccess::createPropertyAccessor();
-                $value = $accessor->getValue($object, $info['property']);
-                $repository = $this->container->get('doctrine')->getRepository($info['entity']);
+                $value = PropertyAccess::createPropertyAccessor()
+                    ->getValue($object, $info['property']);
+                $repository = isset($info['entity']) && $info['entity'] ?
+                    $this->container->get('doctrine')
+                        ->getRepository($info['entity']) :
+                    null;
 
                 $multiple = isset($info['multiple']) && $info['multiple'] == true;
                 $options['multiple'] = $multiple;
@@ -214,8 +214,33 @@ class FormHelperService extends ContainerAware {
 
                 if($multiple){
                     if(is_array($value) || $value instanceof \IteratorAggregate ){
-                        foreach($value as $valueItem){
-                            $options['choices'][$valueItem->getId()] = $valueItem->__toString();
+                        if(!$repository &&
+                            isset($info['resolve']) &&
+                            isset($info['resolve']['fetch']) &&
+                            isset($info['resolve']['toParam']) &&
+                            isset($info['resolve']['toString'])){
+                            $service = substr($info['resolve']['fetch'][0], 1);
+                            $method = $info['resolve']['fetch'][1];
+                            $items = $this->container->get($service)->{$method}($value);
+                        }else{
+                            $items = $value;
+                        }
+
+                        foreach($items as $item){
+                            if (!$repository) {
+                                $param = $item;
+                                foreach ($info['resolve']['toParam'] as $k) {
+                                    $param = $param[$k];
+                                }
+                                $string = $item;
+                                foreach ($info['resolve']['toString'] as $k) {
+                                    $string = $string[$k];
+                                }
+                            } else {
+                                $param = $item->getId();
+                                $string = strval($item);
+                            }
+                            $options['choices'][$param] = $string;
                         }
                     }else{
                         $options['choices'] = [];
@@ -231,12 +256,17 @@ class FormHelperService extends ContainerAware {
                 $formBuilder->get($column)
                     ->resetViewTransformers()
                     ->addModelTransformer(new CallbackTransformer(
-                        function ($object) use ($multiple) {
+                        function ($object) use ($info, $multiple, $repository) {
                             if($multiple){
                                 if(is_array($object) || $object instanceof \IteratorAggregate){
                                     $result = [];
                                     foreach($object as $objectItem){
-                                        $result[] = (string) $objectItem->getId();
+                                        if(!$repository){
+                                            $param = $objectItem;
+                                        }else{
+                                            $param = $objectItem->getId();
+                                        }
+                                        $result[] = (string) $param;
                                     }
 
                                     return $result;
@@ -248,13 +278,18 @@ class FormHelperService extends ContainerAware {
                         function ($submittedValue) use($multiple, $repository, $column) {
                             if($submittedValue){
                                 if($multiple && is_array($submittedValue)){
-                                    $collection = new ArrayCollection();
+                                    $collection = !$repository ?
+                                        [] :
+                                        new ArrayCollection();
 
                                     foreach($submittedValue as $id){
-                                        $value = $repository->find($id);
-
-                                        if($value){
-                                            $collection->add($value);
+                                        if(!$repository){
+                                            $collection[] = $id;
+                                        }else{
+                                            $value = $repository->find($id);
+                                            if($value){
+                                                $collection->add($value);
+                                            }
                                         }
                                     }
 
