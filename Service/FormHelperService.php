@@ -232,10 +232,19 @@ class FormHelperService extends ContainerAware {
                                 foreach ($info['resolve']['toParam'] as $k) {
                                     $param = $param[$k];
                                 }
-                                $string = $item;
-                                foreach ($info['resolve']['toString'] as $k) {
-                                    $string = $string[$k];
+                                $parts = [];
+                                foreach ($info['resolve']['toString'] as $ks) {
+                                    $part = $item;
+                                    foreach ($ks as $k) {
+                                        if(!isset($part[$k])){
+                                            $part = null;
+                                            break;
+                                        }
+                                        $part = $part[$k];
+                                    }
+                                    if($part !== null) $parts[] = $part;
                                 }
+                                $string = implode(' ', $parts);
                             } else {
                                 $param = $item->getId();
                                 $string = strval($item);
