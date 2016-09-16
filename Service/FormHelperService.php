@@ -193,7 +193,7 @@ class FormHelperService extends ContainerAware {
                     [
                         'class'       => 'form-control js-autocomplete',
                         'data-url'    => $route,
-                        'data-params' => json_encode(isset($info['url']['params']) ? $info['url']['params'] : [])
+                        'data-params' => json_encode(isset($info['url']['params']) ? $info['url']['params'] : new \stdClass)
                     ]
                 );
 
