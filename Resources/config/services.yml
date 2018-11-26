@@ -1,27 +1,27 @@
 services:
   adminContext:
       class:  Youshido\AdminBundle\Service\AdminContext
-      arguments: [@service_container]
+      arguments: ['@service_container']
 
   admin.form.helper:
         class: Youshido\AdminBundle\Service\FormHelperService
         calls:
-          - [ setContainer, [ @service_container ] ]
+          - [ setContainer, ['@service_container'] ]
 
   adminExcelExporter:
       class: Youshido\AdminBundle\Service\ExcelExporter
       calls:
-          - [setContainer, [@service_container] ]
+          - [setContainer, ['@service_container'] ]
 
   admin.security:
       class: Youshido\AdminBundle\Service\Security
       calls:
-          - [setContainer, [@service_container] ]
+          - [setContainer, ['@service_container'] ]
 
   admin.twig_extension:
       class: Youshido\AdminBundle\Twig\AdminExtension
       public: true
       calls:
-          - [ setContainer, [@service_container]]
+          - [ setContainer, ['@service_container']]
       tags:
           - { name: twig.extension }
