@@ -7,11 +7,12 @@
 
 namespace Youshido\AdminBundle\Service;
 
+use Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 
-use Symfony\Component\DependencyInjection\ContainerAware;
-
-class Security extends ContainerAware
+class Security implements ContainerAwareInterface
 {
+    use ContainerAwareTrait;
 
     public function isGranted($object, $moduleConfig, $actionName)
     {

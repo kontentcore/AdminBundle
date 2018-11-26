@@ -11,7 +11,8 @@ namespace Youshido\AdminBundle\Service;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityRepository;
-use Symfony\Component\DependencyInjection\ContainerAware;
+use Symfony\Component\DependencyInjection\ContainerAwareInterface;
+use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\Form\CallbackTransformer;
 use Symfony\Component\Form\Extension\Core\DataTransformer\BooleanToStringTransformer;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeToStringTransformer;
@@ -22,7 +23,9 @@ use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Youshido\CMSBundle\Structure\Attribute\AttributedInterface;
 use Youshido\CMSBundle\Structure\Attribute\BaseAttribute;
 
-class FormHelperService extends ContainerAware {
+class FormHelperService implements ContainerAwareInterface 
+{
+    use ContainerAwareTrait;
 
     /**
      * @param AttributedInterface $object
