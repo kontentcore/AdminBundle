@@ -18,7 +18,6 @@
     </div>
     {% endif %}
 
-    {% block list_panel %}
         <div class="panel">
             {% if adminContext.activeModule.batchs is defined %}
                 <form method="post" action="#">
@@ -82,8 +81,6 @@
                 </form>
                 {% endif %}
         </div>
-    {% endblock %}
-
 {% endblock %}
 
 {% if adminContext.activeModule.batchs is defined %}
