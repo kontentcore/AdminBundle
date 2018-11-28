@@ -2,9 +2,10 @@
 
 namespace Youshido\AdminBundle\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Template;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Youshido\AdminBundle\Entity\AdminUser;
@@ -73,7 +74,7 @@ class SecurityController extends Controller {
         ])
             ->add('login', null, ['attr' => ['class' => 'form-control']])
             ->add('isActive', null, ['attr' => ['class' => 'form-control'], 'required' => false])
-            ->add('password', 'repeated', array(
+            ->add('password', RepeatedType::class, array(
                 'type' => 'password',
                 'invalid_message' => 'The password fields must match.',
                 'options' => array('attr' => array('class' => 'form-control')),

@@ -8,9 +8,9 @@
 
 namespace Youshido\AdminBundle\Service;
 
-
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityRepository;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\DependencyInjection\ContainerAwareInterface;
 use Symfony\Component\DependencyInjection\ContainerAwareTrait;
 use Symfony\Component\Form\CallbackTransformer;
@@ -18,12 +18,21 @@ use Symfony\Component\Form\Extension\Core\DataTransformer\BooleanToStringTransfo
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeToStringTransformer;
 use Symfony\Component\Form\Form;
 use Symfony\Component\Form\FormBuilder;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
+use Symfony\Component\Form\Extension\Core\Type\DateType;
+use Symfony\Component\Form\Extension\Core\Type\HiddenType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
 use Youshido\CMSBundle\Structure\Attribute\AttributedInterface;
 use Youshido\CMSBundle\Structure\Attribute\BaseAttribute;
+use Youshido\UploadableBundle\Type\YoushidoFileType;
 
-class FormHelperService implements ContainerAwareInterface 
+class FormHelperService implements ContainerAwareInterface
 {
     use ContainerAwareTrait;
 
@@ -47,7 +56,13 @@ class FormHelperService implements ContainerAwareInterface
     {
         $options = array('attr' => array('class' => '', 'autocomplete' => 'off'));
 
-        if (in_array($info['type'], ['text', 'integer'])) {
+        if (in_array($info['type'], ['text',
+            'integer',
+            'textarea',
+            'Symfony\Component\Form\Extension\Core\Type\IntegerType',
+            'Symfony\Component\Form\Extension\Core\Type\TextType',
+            'Symfony\Component\Form\Extension\Core\Type\TextareaType'
+            ])) {
             $options['attr']['class'] = 'form-control';
         } elseif ($info['type'] == 'entity') {
             $options['attr']['class'] = 'form-control';
@@ -85,7 +100,7 @@ class FormHelperService implements ContainerAwareInterface
                 //$formBuilder->add(
                 //    $formBuilder->create($column, 'text', $options)->addModelTransformer($transformer)
                 //);
-                $formBuilder->add($column, 'date', $options);
+                $formBuilder->add($column, DateType::class, $options);
                 break;
             case 'entity':
                 $options = array_merge(array(
@@ -125,7 +140,7 @@ class FormHelperService implements ContainerAwareInterface
                 if (!empty($info['multiple'])) {
                     $options['multiple'] = true;
                 }
-                $formBuilder->add($column, 'entity', $options);
+                $formBuilder->add($column, EntityType::class, $options);
                 break;
             case 'collection':
                 $options = array_merge(array(
@@ -134,16 +149,16 @@ class FormHelperService implements ContainerAwareInterface
                     'allow_delete' => true,
                 ), $options);
 
-                $formBuilder->add($column, 'collection', $options);
+                $formBuilder->add($column, CollectionType::class, $options);
                 break;
             case 'textarea':
             case 'html':
             case 'wysiwyg':
-                $formBuilder->add($column, 'textarea', $options);
+                $formBuilder->add($column, TextareaType::class, $options);
                 break;
             case 'boolean':
             case 'checkbox':
-                $formBuilder->add($column, 'checkbox', $options);
+                $formBuilder->add($column, CheckboxType::class, $options);
                 break;
             case 'file':
                 $options = array_merge(array(
@@ -151,7 +166,7 @@ class FormHelperService implements ContainerAwareInterface
                     'entity_property' => !empty($info['entity_property']) ? $info['entity_property'] : $column
                 ), $options);
 
-                $formBuilder->add($column, 'youshido_file', $options);
+                $formBuilder->add($column, YoushidoFileType::class, $options);
                 break;
             case 'image':
                 $options = array_merge(array(
@@ -160,25 +175,26 @@ class FormHelperService implements ContainerAwareInterface
                     'entity_property' => !empty($info['entity_property']) ? $info['entity_property'] :  $column
                 ), $options);
 
-                $formBuilder->add($column, 'youshido_file', $options);
+                $formBuilder->add($column, YoushidoFileType::class, $options);
                 break;
             case 'label':
-                $formBuilder->add($column, 'hidden', $options);
+                $formBuilder->add($column, HiddenType::class, $options);
                 break;
             case 'hidden':
-                $formBuilder->add($column, 'hidden', $options);
+                $formBuilder->add($column, HiddenType::class, $options);
                 break;
             case 'choice':
+                $options['choices_as_values'] = true;
                 $options['choices'] = $info['choices'];
 
                 if (!empty($info['multiple'])) {
                     $options['multiple'] = true;
                 }
 
-                $formBuilder->add($column, 'choice', $options);
+                $formBuilder->add($column, ChoiceType::class, $options);
                 break;
             case 'integer':
-                $formBuilder->add($column, 'integer', $options);
+                $formBuilder->add($column, IntegerType::class, $options);
                 break;
 
             case 'autocomplete':
@@ -252,7 +268,7 @@ class FormHelperService implements ContainerAwareInterface
                                 $param = $item->getId();
                                 $string = strval($item);
                             }
-                            $options['choices'][$param] = $string;
+                            $options['choices'][$string] = $param;
                         }
                     }else{
                         $options['choices'] = [];
@@ -263,8 +279,9 @@ class FormHelperService implements ContainerAwareInterface
                     }
                 }
 
+                $options['choices_as_values'] = true;
 
-                $formBuilder->add($column, 'choice', $options);
+                $formBuilder->add($column, ChoiceType::class, $options);
                 $formBuilder->get($column)
                     ->resetViewTransformers()
                     ->addModelTransformer(new CallbackTransformer(
@@ -318,7 +335,7 @@ class FormHelperService implements ContainerAwareInterface
                 break;
 
             default:
-                $formBuilder->add($column, 'text', $options);
+                $formBuilder->add($column, TextType::class, $options);
 
         }
     }

@@ -14,6 +14,7 @@ use Doctrine\ORM\EntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\Form\Extension\Core\Type\FormType;
 use Symfony\Component\Form\Extension\Core\DataTransformer\DateTimeToStringTransformer;
 use Symfony\Component\Form\FormBuilder;
 use Symfony\Component\HttpFoundation\Request;
@@ -166,7 +167,7 @@ class BaseEntityController extends Controller
     {
         /** @var FormBuilder $filtersBuilder */
         $filtersBuilder = $this->get('form.factory')
-            ->createNamedBuilder('filter', 'form', $filterData, [
+            ->createNamedBuilder('filter', FormType::class, $filterData, [
                 'method' => 'get',
                 'csrf_protection' => false,
                 'attr' => ['class' => 'form form-inline']
